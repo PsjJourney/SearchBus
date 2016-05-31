@@ -17,15 +17,19 @@ public class ListviewAdapter extends BaseAdapter {
     LayoutInflater mInflater;
     List<String> mData;
 
-    public ListviewAdapter(LayoutInflater inflater, Context mContext,List<String> data)
-    {
+    public ListviewAdapter(LayoutInflater inflater, Context mContext) {
         mInflater = inflater;
         context = mContext;
+    }
+
+    public void setData(List<String> data) {
         mData = data;
     }
+
     @Override
     public int getCount() {
-        return mData.size();
+//        return mData.size();
+        return (mData == null) ? 0 : (mData.size());
     }
 
     @Override
@@ -40,8 +44,8 @@ public class ListviewAdapter extends BaseAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
-        View view1 = mInflater.inflate(R.layout.listview_item_layout,null);
-        TextView textView = (TextView)view1.findViewById(R.id.text_content_item);
+        View view1 = mInflater.inflate(R.layout.listview_item_layout, null);
+        TextView textView = (TextView) view1.findViewById(R.id.text_content_item);
         textView.setText(mData.get(i));
         return view1;
     }

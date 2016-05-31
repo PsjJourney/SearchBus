@@ -7,15 +7,22 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.search.busline.BusLineResult;
 import com.baidu.mapapi.search.busline.BusLineSearch;
 import com.baidu.mapapi.search.busline.BusLineSearchOption;
@@ -50,6 +57,14 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     private BusLineResult route = null; // 保存驾车/步行路线数据的变量，供浏览节点时使用
     private BaiduMap baiduMap = null;
     private int nodeIndex = -2; // 节点索引,供浏览节点时使用
+    private EditText cityName, routeName;
+    private String city = null;
+    private String busNumber = null;
+    private ListView listView;
+    private List<String> list;
+    private ListviewAdapter listviewAdapter;
+    Button switcMode;
+    private int modeState = 0;
 
     /**
      * 构造广播监听类，监听 SDK key 验证以及网络异常广播
@@ -65,8 +80,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                     .equals(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_OK)) {
                 text.setText("key 验证成功! 功能可以正常使用");
 //                text.setTextColor(Color.BLUE);
-            }
-            else if (s
+            } else if (s
                     .equals(SDKInitializer.SDK_BROADCAST_ACTION_STRING_NETWORK_ERROR)) {
                 text.setText("网络出错");
             }
@@ -79,7 +93,6 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        SDKInitializer.initialize(getApplicationContext());
 //        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
@@ -91,10 +104,22 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         mReceiver = new SDKReceiver();
         registerReceiver(mReceiver, iFilter);
 
+        list = new ArrayList<>();
+        listView = (ListView) findViewById(R.id.listview);
+        LayoutInflater inflater = getLayoutInflater();
+        listviewAdapter = new ListviewAdapter(inflater, this);
+        listView.setAdapter(listviewAdapter);
+        listView.setDividerHeight(10);
+
+        switcMode = (Button) findViewById(R.id.switch_mode);
+        switcMode.setOnClickListener(this);
+
         bt = (Button) findViewById(R.id.button);
         bt.setOnClickListener(this);
         mMapView = (MapView) findViewById(R.id.bmapView);
         baiduMap = mMapView.getMap();
+        cityName = (EditText) findViewById(R.id.city_name);
+        routeName = (EditText) findViewById(R.id.route_name);
         //设置地图类型
 //        baiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
         //交通图显示
@@ -108,6 +133,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         mBusLineSearch.setOnGetBusLineSearchResultListener(this);
         overlay = new BusLineOverlay(baiduMap);
         baiduMap.setOnMarkerClickListener(overlay);
+
     }
 
     public void searchNextBusline(View v) {
@@ -117,7 +143,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         if (busLineIndex >= 0 && busLineIndex < busLineIDList.size()
                 && busLineIDList.size() > 0) {
             mBusLineSearch.searchBusLine((new BusLineSearchOption()
-                    .city("苏州").uid(busLineIDList.get(busLineIndex))));
+                    .city(city).uid(busLineIDList.get(busLineIndex))));
 
             busLineIndex++;
         }
@@ -137,10 +163,33 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         if (view == bt) {
             busLineIDList.clear();
             busLineIndex = 0;
+
+            if (TextUtils.isEmpty(cityName.getText())) {
+                city = "";
+            } else {
+                city = cityName.getText() + "";
+            }
+            if (TextUtils.isEmpty(routeName.getText())) {
+                busNumber = "";
+            } else {
+                busNumber = routeName.getText() + "";
+            }
             // 发起poi检索，从得到所有poi中找到公交线路类型的poi，再使用该poi的uid进行公交详情搜索
             mSearch.searchInCity((new PoiCitySearchOption()).city(
-                    "苏州")
-                    .keyword("7"));
+                    city)
+                    .keyword(busNumber));
+        } else if (view == switcMode) {
+            if (modeState == 1) {
+                modeState = 0;
+                mMapView.setVisibility(View.INVISIBLE);
+                listView.setVisibility(View.VISIBLE);
+                switcMode.setText("显示地图");
+            } else if (modeState == 0) {
+                modeState = 1;
+                mMapView.setVisibility(View.VISIBLE);
+                listView.setVisibility(View.INVISIBLE);
+                switcMode.setText("显示名称");
+            }
         }
     }
 
@@ -185,7 +234,10 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         Toast.makeText(MapActivity.this, busLineResult.getBusLineName(),
                 Toast.LENGTH_SHORT).show();
         for (int i = 0; i < busLineResult.getStations().size(); i++) {
-            Log.e("name",busLineResult.getStations().get(i).getTitle());
+            Log.e("name", busLineResult.getStations().get(i).getTitle());
+            list.add(busLineResult.getStations().get(i).getTitle());
         }
+        listviewAdapter.setData(list);
+        listviewAdapter.notifyDataSetChanged();
     }
 }

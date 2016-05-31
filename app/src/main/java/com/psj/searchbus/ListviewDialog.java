@@ -52,7 +52,7 @@ public class ListviewDialog extends Dialog {
         dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
         hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
         minute = calendar.get(Calendar.MINUTE);
-        ListviewAdapter listviewAdapter = new ListviewAdapter(inflater,getContext(),mData);
+        ListviewAdapter listviewAdapter = new ListviewAdapter(inflater,getContext());
         mListview.setAdapter(listviewAdapter);
         mListview.setDividerHeight(10);
         mListview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
